@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peta Kos Sekitar UPI Bandung</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+<style>
+  :root{
+    --putra:#2563eb;
+    --putri:#db2777;
+    --campur:#059669;
+    --unknown:#6b7280;
+    --bg:#0f172a;
+    --panel:#ffffff;
+    --ink:#111827;
+    --muted:#6b7280;
+    --border:#e5e7eb;
+    --accent:#7c3aed;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  #app{display:flex;height:100vh;width:100%;}
+
+  /* Sidebar */
+  #sidebar{
+    width:340px;
+    min-width:340px;
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    z-index:1000;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+  }
+  #sidebar-header{
+    padding:18px 18px 12px 18px;
+    border-bottom:1px solid var(--border);
+    background: linear-gradient(135deg,#1e293b,#334155);
+    color:white;
+  }
+  #sidebar-header h1{
+    font-size:16px;
+    margin:0 0 4px 0;
+    font-weight:700;
+    letter-spacing:.2px;
+  }
+  #sidebar-header p{
+    font-size:12px;
+    margin:0;
+    color:#cbd5e1;
+  }
+  #stats{
+    display:flex;
+    gap:8px;
+    padding:12px 18px;
+    border-bottom:1px solid var(--border);
+    flex-wrap:wrap;
+  }
+  .stat-chip{
+    background:#f3f4f6;
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:11px;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .stat-chip b{
+    color:var(--ink);
+    font-size:14px;
+    display:block;
+  }
+  #controls{
+    padding:14px 18px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .field label{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    color:var(--muted);
+    display:block;
+    margin-bottom:5px;
+  }
+  #search{
+    width:100%;
+    padding:9px 12px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:13px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  #search:focus{border-color:var(--accent);}
+  select{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:13px;
+    background:white;
+    color:var(--ink);
+  }
+  .gender-filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .gender-btn{
+    flex:1;
+    min-width:70px;
+    padding:7px 8px;
+    border-radius:8px;
+    border:1.5px solid var(--border);
+    background:white;
+    font-size:11.5px;
+    font-weight:700;
+    cursor:pointer;
+    color:var(--muted);
+    transition:all .12s;
+    text-align:center;
+  }
+  .gender-btn.active[data-g="Putra"]{background:var(--putra);border-color:var(--putra);color:white;}
+  .gender-btn.active[data-g="Putri"]{background:var(--putri);border-color:var(--putri);color:white;}
+  .gender-btn.active[data-g="Campur"]{background:var(--campur);border-color:var(--campur);color:white;}
+  .gender-btn.active[data-g="Tidak diketahui"]{background:var(--unknown);border-color:var(--unknown);color:white;}
+
+  #list-header{
+    padding:10px 18px 8px 18px;
+    font-size:12px;
+    font-weight:700;
+    color:var(--muted);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  #list{
+    flex:1;
+    overflow-y:auto;
+    padding:6px 10px;
+  }
+  .kos-card{
+    padding:10px 10px;
+    border-radius:10px;
+    cursor:pointer;
+    margin-bottom:4px;
+    border:1px solid transparent;
+    transition:background .1s;
+  }
+  .kos-card:hover{background:#f8fafc;border-color:var(--border);}
+  .kos-card.selected{background:#ede9fe;border-color:var(--accent);}
+  .kos-name{
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink);
+    margin-bottom:2px;
+    line-height:1.3;
+  }
+  .kos-meta{
+    font-size:11px;
+    color:var(--muted);
+    display:flex;
+    gap:6px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .badge{
+    display:inline-block;
+    font-size:9.5px;
+    font-weight:800;
+    padding:2px 6px;
+    border-radius:5px;
+    color:white;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  .badge.Putra{background:var(--putra);}
+  .badge.Putri{background:var(--putri);}
+  .badge.Campur{background:var(--campur);}
+  .badge.TidakDiketahui{background:var(--unknown);}
+  .rating-star{color:#f59e0b;font-weight:700;}
+  .maps-mini-link{
+    margin-left:auto;
+    text-decoration:none;
+    font-size:13px;
+    line-height:1;
+    padding:2px 4px;
+    border-radius:6px;
+    transition:background .1s;
+  }
+  .maps-mini-link:hover{background:#e5e7eb;}
+
+  #map{flex:1;}
+
+  /* Leaflet popup styling */
+  .leaflet-popup-content-wrapper{border-radius:12px;}
+  .popup-box{font-family:inherit;min-width:220px;}
+  .popup-title{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:4px;}
+  .popup-addr{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.4;}
+  .popup-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px dashed var(--border);}
+  .popup-row span:first-child{color:var(--muted);}
+  .popup-row span:last-child{font-weight:700;color:var(--ink);}
+  .popup-btn{
+    display:block;
+    text-align:center;
+    margin-top:8px;
+    padding:7px;
+    background:#111827;
+    color:white !important;
+    border-radius:8px;
+    font-size:12px;
+    font-weight:700;
+    text-decoration:none;
+  }
+  .popup-btn-row{
+    display:flex;
+    gap:6px;
+    margin-top:8px;
+  }
+  .popup-btn-row .popup-btn{
+    margin-top:0;
+    flex:1;
+    padding:7px 4px;
+    font-size:11.5px;
+  }
+  .popup-btn-maps{background:#2563eb;}
+  .popup-btn-dir{background:#059669;}
+
+  .legend-box{
+    background:white;
+    padding:10px 14px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.15);
+    font-size:12px;
+    line-height:1.9;
+  }
+  .legend-dot{
+    display:inline-block;
+    width:10px;height:10px;
+    border-radius:50%;
+    margin-right:6px;
+    vertical-align:middle;
+  }
+
+  #empty-state{
+    padding:30px 18px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  /* mobile */
+  @media (max-width: 720px){
+    #app{flex-direction:column;}
+    #sidebar{width:100%;min-width:0;height:42vh;order:2;}
+    #map{height:58vh;order:1;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h1>🏠 Peta Kos Sekitar UPI</h1>
+      <p>Wilayah Isola, Gegerkalong, Sarijadi, Sukarasa, Cidadap dkk. — radius ±5 km dari kampus UPI</p>
+    </div>
+    <div id="stats"></div>
+    <div id="controls">
+      <div class="field">
+        <label>Cari nama / alamat</label>
+        <input id="search" type="text" placeholder="misal: putri, gegerkalong, ledeng..." />
+      </div>
+      <div class="field">
+        <label>Area</label>
+        <select id="areaFilter"><option value="">Semua area</option></select>
+      </div>
+      <div class="field">
+        <label>Jenis Kos</label>
+        <div class="gender-filters" id="genderFilters">
+          <button class="gender-btn active" data-g="Putra">Putra</button>
+          <button class="gender-btn active" data-g="Putri">Putri</button>
+          <button class="gender-btn active" data-g="Campur">Campur</button>
+          <button class="gender-btn active" data-g="Tidak diketahui">Lainnya</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Urutkan</label>
+        <select id="sortBy">
+          <option value="jarak">Jarak terdekat dari UPI</option>
+          <option value="rating">Rating tertinggi</option>
+          <option value="nama">Nama (A-Z)</option>
+        </select>
+      </div>
+    </div>
+    <div id="list-header">
+      <span id="resultCount">0 kos ditemukan</span>
+    </div>
+    <div id="list"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script>
+const KOS_DATA = [{"nama": "Kost Tashfia", "alamat": "Jl. Gegerkalong Girang Baru II No.10, Isola", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "41", "telepon": "+62 851-9642-2007", "lat": -6.8629837, "lon": 107.591866, "jarak": 0.22}, {"nama": "Kost Polaris", "alamat": "Jl. Negla Hilir No.2/171A, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "41", "telepon": "+62 812-2110-7007", "lat": -6.8590431, "lon": 107.5930102, "jarak": 0.25}, {"nama": "KOST 22 LEDENG SETIABUDI", "alamat": "Jl. Dr. Setiabudi No.284, Ledeng, Kec. Cidadap", "area": "Setiabudi", "gender": "Tidak diketahui", "rating": "4.0", "jumlah_rating": "1", "telepon": "+62 899-7845-984", "lat": -6.8596467, "lon": 107.5949306, "jarak": 0.29}, {"nama": "Kost kuning bu enggis", "alamat": "Ledeng, Kec. Cidadap", "area": "Cidadap", "gender": "Tidak diketahui", "rating": "4.3", "jumlah_rating": "3", "telepon": null, "lat": -6.859936, "lon": 107.5953132, "jarak": 0.31}, {"nama": "Kost Muslimah Fihifdzillah", "alamat": "Jl. Sersan Bajuri Dalam No.15A, Isola", "area": "Cilimus", "gender": "Putri", "rating": "5.0", "jumlah_rating": "7", "telepon": "+62 822-7909-5990", "lat": -6.858395, "lon": 107.5931075, "jarak": 0.32}, {"nama": "Alhuda Kost / Kosan UPI Bandung", "alamat": "Jl. Cilimus No.20, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.1", "jumlah_rating": "72", "telepon": "+62 813-2223-2511", "lat": -6.8586077, "lon": 107.5910725, "jarak": 0.36}, {"nama": "Kost Khusus Putri (Ledeng)", "alamat": "Gg. Bp Arsadi II No.5, Ledeng", "area": "Cidadap", "gender": "Putri", "rating": "5.0", "jumlah_rating": "2", "telepon": null, "lat": -6.8606915, "lon": 107.5961201, "jarak": 0.36}, {"nama": "Wisma Amanah (Kost)", "alamat": "Jl. Sersan Bajuri No.3, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.7", "jumlah_rating": "11", "telepon": "+62 895-3371-96945", "lat": -6.8579356, "lon": 107.5932698, "jarak": 0.38}, {"nama": "Asrama Putri Puri Kartini", "alamat": "Jl. Gegerkalong Girang No.27", "area": "Gegerkalong", "gender": "Putri", "rating": "3.8", "jumlah_rating": "70", "telepon": "+62 814-6380-4749", "lat": -6.8646588, "lon": 107.5924456, "jarak": 0.38}, {"nama": "Bumi Anggara Kost", "alamat": "Jl. Cipaku Indah II No.28, Ledeng", "area": "Cipaku", "gender": "Tidak diketahui", "rating": "4.4", "jumlah_rating": "11", "telepon": null, "lat": -6.8611469, "lon": 107.5964344, "jarak": 0.39}, {"nama": "Pondok Muhasabah", "alamat": "Jl. Gegerkalong Girang No.40B, Isola", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.4", "jumlah_rating": "34", "telepon": "+62 22 2009218", "lat": -6.8633805, "lon": 107.5898785, "jarak": 0.41}, {"nama": "Kost Wisma Nuri", "alamat": "Jl. Cipaku Indah II No.36, Ledeng, Kec. Cidadap", "area": "Cipaku", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "23", "telepon": "+62 851-5535-3739", "lat": -6.8614523, "lon": 107.5966781, "jarak": 0.42}, {"nama": "Kost elprive", "alamat": "Jl. Sersan Bajuri Dalam No.11, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.7", "jumlah_rating": "15", "telepon": "+62 822-1919-2523", "lat": -6.8576678, "lon": 107.5937984, "jarak": 0.42}, {"nama": "Wisma Zhafira II Bandung", "alamat": "Jl. Gegerkalong Girang Belakang No.63", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": null, "jumlah_rating": null, "telepon": "+62 818-0942-3888", "lat": -6.8640255, "lon": 107.5903102, "jarak": 0.42}, {"nama": "Kost Ibu Cicih", "alamat": "Jl. Dr. Setiabudi No.35, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "6", "telepon": "+62 821-6540-1901", "lat": -6.8651583, "lon": 107.5933133, "jarak": 0.43}, {"nama": "Kost DewanRinov", "alamat": "Jl. Gegerkalong Girang No.44A, Isola", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "4", "telepon": "+62 812-2063-2332", "lat": -6.8632767, "lon": 107.5895405, "jarak": 0.43}, {"nama": "Kost Pa Agus", "alamat": "Jl. Gegerkalong Girang No.47, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.5", "jumlah_rating": "50", "telepon": null, "lat": -6.8647584, "lon": 107.5910247, "jarak": 0.44}, {"nama": "Pondok Putri", "alamat": "Jl. Gegerkalong Tengah No.78, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "4.4", "jumlah_rating": "20", "telepon": null, "lat": -6.8649784, "lon": 107.5915164, "jarak": 0.44}, {"nama": "Kosan Al-Huda Hj. Dedeh", "alamat": "Jl. Cilimus No.90, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "2", "telepon": null, "lat": -6.8581989, "lon": 107.5903961, "jarak": 0.44}, {"nama": "Kos H. Jajang", "alamat": "Jl. Gegerkalong Girang Gg. Al-Barkah No.27", "area": "Gegerkalong", "gender": "Campur", "rating": "4.6", "jumlah_rating": "16", "telepon": null, "lat": -6.865201, "lon": 107.5923266, "jarak": 0.44}, {"nama": "Rumah Kost Cipaku", "alamat": "Jl. Cipaku Permai No.1B, Ledeng, Kec. Cidadap", "area": "Cipaku", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "8", "telepon": "+62 888-7080-888", "lat": -6.8627001, "lon": 107.5967694, "jarak": 0.45}, {"nama": "Kosan Pak Dadang (Gang Panorama 1)", "alamat": "Jl. Kapten Abdul Hamid No.40, Hegarmanah", "area": "Panorama", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "1", "telepon": null, "lat": -6.8644451, "lon": 107.5954368, "jarak": 0.45}, {"nama": "Kost Pondok Safira dekat UPI Bandung", "alamat": "Jl. Cilimus No.35, Isola", "area": "Cilimus", "gender": "Putri", "rating": "4.8", "jumlah_rating": "15", "telepon": "+62 857-5910-8367", "lat": -6.8578566, "lon": 107.5906671, "jarak": 0.46}, {"nama": "ACI KOST PUTRI", "alamat": "Jl. Cilimus No.11, Isola", "area": "Cilimus", "gender": "Putri", "rating": "3.6", "jumlah_rating": "45", "telepon": "+62 896-8097-1923", "lat": -6.857704, "lon": 107.5908982, "jarak": 0.46}, {"nama": "Green Kost setiabudhi", "alamat": "Jl. Dr. Setiabudi No.199A, Gegerkalong", "area": "Setiabudi", "gender": "Putri", "rating": "4.1", "jumlah_rating": "31", "telepon": null, "lat": -6.8654912, "lon": 107.5934151, "jarak": 0.47}, {"nama": "Kosan Purnama", "alamat": "Jl. Kapten Abdul Hamid No.24, Ledeng, Kec. Cidadap", "area": "Panorama", "gender": "Tidak diketahui", "rating": "4.7", "jumlah_rating": "24", "telepon": "+62 812-2240-1146", "lat": -6.864912, "lon": 107.5950417, "jarak": 0.47}, {"nama": "Kosan Setiabudi 201B", "alamat": "Jl. Dr. Setiabudi No.201B, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.0", "jumlah_rating": "4", "telepon": null, "lat": -6.865406, "lon": 107.5937209, "jarak": 0.47}, {"nama": "Kost Manja", "alamat": "Jl. Dr. Setiabudi No.199a, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.5", "jumlah_rating": "2", "telepon": null, "lat": -6.8655058, "lon": 107.5930832, "jarak": 0.47}, {"nama": "Kosan Asur", "alamat": "Jl. Gegerkalong Girang No.69E, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.3", "jumlah_rating": "22", "telepon": "+62 852-9484-3149", "lat": -6.8642125, "lon": 107.5896642, "jarak": 0.48}, {"nama": "GUFAMKOST", "alamat": "Jl. Cilimus No.1, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "1", "telepon": "+62 851-5788-6298", "lat": -6.8570176, "lon": 107.5921361, "jarak": 0.48}, {"nama": "Kost Putri Byangara", "alamat": "Jl. Gegerkalong Girang Gg. Gegersuni 1 No.33B, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "5.0", "jumlah_rating": "17", "telepon": "+62 821-8888-4399", "lat": -6.8639398, "lon": 107.589447, "jarak": 0.48}, {"nama": "Kost twins", "alamat": "Jl. Dr. Setiabudi No.199B, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "4.3", "jumlah_rating": "19", "telepon": null, "lat": -6.8655791, "lon": 107.5933998, "jarak": 0.48}, {"nama": "Binangkit kost", "alamat": "Jl. Sersan Bajuri No.19, Isola", "area": "Cilimus", "gender": "Campur", "rating": "5.0", "jumlah_rating": "13", "telepon": "+62 821-3031-0288", "lat": -6.8569024, "lon": 107.5927759, "jarak": 0.49}, {"nama": "Kost Pondok Aulia", "alamat": "Jl. Taman Setiabudi/Gegerkalong Girang No.22", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.6", "jumlah_rating": "37", "telepon": "+62 812-6135-8264", "lat": -6.8650277, "lon": 107.5904738, "jarak": 0.49}, {"nama": "Zava kost", "alamat": "Jl. Gegerkalong Girang Gg. Cempaka No.106, Isola", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.1", "jumlah_rating": "15", "telepon": "+62 878-2517-6813", "lat": -6.8621998, "lon": 107.5885618, "jarak": 0.49}, {"nama": "Kost Putri Pondok Syarfa", "alamat": "Jl. Taman Setiabudi, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "5.0", "jumlah_rating": "3", "telepon": null, "lat": -6.8652522, "lon": 107.590776, "jarak": 0.5}, {"nama": "Kos Graha Citra", "alamat": "Jl. Sersan Surip No.160A, Ledeng, Kec. Cidadap", "area": "Cidadap", "gender": "Tidak diketahui", "rating": "4.7", "jumlah_rating": "21", "telepon": null, "lat": -6.8592083, "lon": 107.596986, "jarak": 0.51}, {"nama": "Florence kost", "alamat": "Jl. Sersan Bajuri No.19, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "3", "telepon": null, "lat": -6.8567393, "lon": 107.5929335, "jarak": 0.51}, {"nama": "Kost Anesha", "alamat": "Gg. Kenanga, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "5", "telepon": "+62 878-2216-9019", "lat": -6.8619648, "lon": 107.588253, "jarak": 0.52}, {"nama": "Pondok New Resik by Puspita", "alamat": "Gg. Asri Jl. Sersan Bajuri No.22B 171A, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "4", "telepon": "+62 856-4323-4242", "lat": -6.8566665, "lon": 107.5935461, "jarak": 0.52}, {"nama": "Kost Pak Deden", "alamat": "Jl. Sersan Bajuri, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "4", "telepon": "+62 822-1853-9060", "lat": -6.8566114, "lon": 107.5925107, "jarak": 0.52}, {"nama": "Kost Pondok Asri by Puspita", "alamat": "Gg. Asri Jl. Sersan Bajuri No.12A, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": null, "jumlah_rating": null, "telepon": "+62 856-4323-4242", "lat": -6.8565705, "lon": 107.5935234, "jarak": 0.53}, {"nama": "Kost panorama II (sugandi)", "alamat": "Jl. Kapten Abdul Hamid Panorama II No.39-41, Hegarmanah", "area": "Panorama", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "2", "telepon": "+62 851-5661-5604", "lat": -6.8655732, "lon": 107.595253, "jarak": 0.54}, {"nama": "Kost Hj. Uher", "alamat": "Jl. Geger Arum I No.73, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.3", "jumlah_rating": "18", "telepon": null, "lat": -6.8614744, "lon": 107.5880177, "jarak": 0.54}, {"nama": "KOST PUTRI MADINA HOUSE 2 BANDUNG", "alamat": "Jl. Pak Gatot VI No.206b, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "4.8", "jumlah_rating": "12", "telepon": "+62 878-1754-8465", "lat": -6.8655225, "lon": 107.5903482, "jarak": 0.55}, {"nama": "Medina Kost Putri / Kost Mahasiswi UPI", "alamat": "Jl. Cilimus No.114, Isola", "area": "Cilimus", "gender": "Putri", "rating": "5.0", "jumlah_rating": "10", "telepon": "+62 856-2366-826", "lat": -6.8569912, "lon": 107.5904467, "jarak": 0.55}, {"nama": "Kosan Cilimus", "alamat": "Jl. Cilimus No.16A, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.1", "jumlah_rating": "79", "telepon": "+62 877-2400-5132", "lat": -6.8563938, "lon": 107.5917854, "jarak": 0.56}, {"nama": "Pondokan Ambu 2", "alamat": "Jl. Gegerkalong Tengah 9 No.7", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.7", "jumlah_rating": "3", "telepon": null, "lat": -6.8660814, "lon": 107.591093, "jarak": 0.57}, {"nama": "Kost Pondok Lestari", "alamat": "Jl. Kapten Abdul Hamid Panorama II No.41, Hegarmanah", "area": "Panorama", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "1", "telepon": null, "lat": -6.8659612, "lon": 107.5952435, "jarak": 0.58}, {"nama": "Kos H. Hidayat", "alamat": "Jl. Sersan Surip, Ledeng, Kec. Cidadap", "area": "Cidadap", "gender": "Tidak diketahui", "rating": "3.0", "jumlah_rating": "1", "telepon": null, "lat": -6.85889, "lon": 107.5975948, "jarak": 0.58}, {"nama": "Kos isola", "alamat": "Jl. Geger Arum Baru No.113 (Pondok Nazwa), Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": null, "jumlah_rating": null, "telepon": null, "lat": -6.8601834, "lon": 107.5877264, "jarak": 0.58}, {"nama": "ACI 7", "alamat": "Jl. Cilimus, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "3.0", "jumlah_rating": "51", "telepon": "+62 22 93773677", "lat": -6.8567357, "lon": 107.5901661, "jarak": 0.59}, {"nama": "Wildan Kost", "alamat": "Jl. Kapten Abdul Hamid No.85B, Ledeng", "area": "Panorama", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "5", "telepon": "+62 813-8646-2093", "lat": -6.8655325, "lon": 107.5961922, "jarak": 0.59}, {"nama": "Wisma Panorama Setiabudi", "alamat": "Jl. Kapten Abdul Hamid No.56, Hegarmanah", "area": "Panorama", "gender": "Tidak diketahui", "rating": "4.4", "jumlah_rating": "66", "telepon": "+62 22 86121829", "lat": -6.8655841, "lon": 107.5960133, "jarak": 0.59}, {"nama": "Kosan Ibu Iwang", "alamat": "Jl. Sersan Surip No.164c/169a, Ledeng, Kec. Cidadap", "area": "Cidadap", "gender": "Putri", "rating": "4.4", "jumlah_rating": "37", "telepon": "+62 815-7348-5342", "lat": -6.8594715, "lon": 107.5979642, "jarak": 0.59}, {"nama": "Kosan Ibu Tita", "alamat": "Jl. Sersan Surip Barat No.164/169A, Ledeng, Kec. Cidadap", "area": "Cidadap", "gender": "Tidak diketahui", "rating": "4.5", "jumlah_rating": "35", "telepon": "+62 851-0092-8783", "lat": -6.8586466, "lon": 107.5975623, "jarak": 0.59}, {"nama": "Kost Putri 8", "alamat": "Jl. Cilimus No.24, Isola", "area": "Cilimus", "gender": "Putri", "rating": "3.4", "jumlah_rating": "241", "telepon": "+62 22 93773677", "lat": -6.8560555, "lon": 107.5916544, "jarak": 0.6}, {"nama": "kos kosan graha bilbel", "alamat": "Jl. Panorama No.II No.47, Hegarmanah", "area": "Panorama", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "1", "telepon": "+62 895-3152-5749", "lat": -6.8660392, "lon": 107.5954039, "jarak": 0.6}, {"nama": "Kos Bu Tate", "alamat": "Jl. Sersan Surip, Ledeng, Kec. Cidadap", "area": "Cidadap", "gender": "Campur", "rating": "4.0", "jumlah_rating": "16", "telepon": "+62 813-9447-8855", "lat": -6.8584802, "lon": 107.597574, "jarak": 0.6}, {"nama": "Kos Melibu Adb", "alamat": "Jl. Gegerkalong Tengah Gg. 8, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "28", "telepon": null, "lat": -6.8664971, "lon": 107.5912367, "jarak": 0.61}, {"nama": "Az Zahra Kost 2 UPI", "alamat": "Jl. Geger Arum Baru No.100, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "2", "telepon": "+62 821-1746-8626", "lat": -6.8601324, "lon": 107.5873715, "jarak": 0.62}, {"nama": "Kost Putri Graha Annisa", "alamat": "Jl. Terusan Pak Gatot Raya No.33, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "4.9", "jumlah_rating": "33", "telepon": "+62 857-1414-0307", "lat": -6.863779, "lon": 107.587741, "jarak": 0.63}, {"nama": "Kost Pa Darya", "alamat": "Jl. Geger Arum Baru No.28, Isola", "area": "Cilimus", "gender": "Putri", "rating": "4.9", "jumlah_rating": "28", "telepon": "+62 813-2259-4548", "lat": -6.8594781, "lon": 107.5875356, "jarak": 0.63}, {"nama": "Kost Saung Koneng", "alamat": "Jl. Dr. Setiabudi Gg. H. Ridho No.20 174-B, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "6", "telepon": null, "lat": -6.8670766, "lon": 107.5924335, "jarak": 0.64}, {"nama": "Kos Pa Rahmat", "alamat": "Jl. Geger Arum Baru No.22, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "6", "telepon": "+62 813-2010-0950", "lat": -6.859612, "lon": 107.587405, "jarak": 0.64}, {"nama": "Kost Putra (Cipaku)", "alamat": "Jl. Cipaku Indah I No.19, Ledeng, Kec. Cidadap", "area": "Cipaku", "gender": "Putra", "rating": "4.8", "jumlah_rating": "6", "telepon": "+62 815-6046-251", "lat": -6.8644827, "lon": 107.5978231, "jarak": 0.65}, {"nama": "Kost Putra", "alamat": "Jl. Gegerkalong Tengah 7 No.53D, Gegerkalong", "area": "Gegerkalong", "gender": "Putra", "rating": "4.0", "jumlah_rating": "23", "telepon": "+62 813-3455-0060", "lat": -6.8668843, "lon": 107.5909781, "jarak": 0.66}, {"nama": "Kost Putra Kiara 2", "alamat": "Jl. Pak Gatot Raya, Gegerkalong", "area": "Gegerkalong", "gender": "Putra", "rating": "4.8", "jumlah_rating": "13", "telepon": "+62 857-2197-5990", "lat": -6.8644172, "lon": 107.5876891, "jarak": 0.67}, {"nama": "Kost an Putri Bapak Ajang", "alamat": "Jl. Geger Arum No.67, Isola", "area": "Cilimus", "gender": "Putri", "rating": "5.0", "jumlah_rating": "16", "telepon": "+62 852-2057-4530", "lat": -6.8601401, "lon": 107.5869229, "jarak": 0.67}, {"nama": "Kost Putri Dekat UPI (Pondok Salma)", "alamat": "Jl. Gegerkalong Girang Gg. Geger Bakti No.27B, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "5.0", "jumlah_rating": "2", "telepon": "+62 821-2728-7551", "lat": -6.8630549, "lon": 107.5870125, "jarak": 0.68}, {"nama": "Kost EDUMEDIA Geger Arum", "alamat": "Jl. Geger Arum No.133, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.5", "jumlah_rating": "4", "telepon": "+62 812-2384-925", "lat": -6.8608202, "lon": 107.5867374, "jarak": 0.68}, {"nama": "Kost Ayunni 2", "alamat": "Jl. Geger Arum No.4B, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.4", "jumlah_rating": "19", "telepon": "+62 813-8154-6893", "lat": -6.8619557, "lon": 107.586738, "jarak": 0.68}, {"nama": "kosan 78a panorama", "alamat": "Jl. Kapten Abdul Hamid, Hegarmanah", "area": "Panorama", "gender": "Tidak diketahui", "rating": "1.0", "jumlah_rating": "1", "telepon": null, "lat": -6.8663377, "lon": 107.5966894, "jarak": 0.7}, {"nama": "Kost Pondok Annisa", "alamat": "Jl. Pak Gatot Raya", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": null, "jumlah_rating": null, "telepon": null, "lat": -6.8642305, "lon": 107.5873204, "jarak": 0.7}, {"nama": "Kost Bu Euis Geger Arum", "alamat": "Jl. Geger Arum No.30B, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "3.0", "jumlah_rating": "4", "telepon": "+62 811-2033-850", "lat": -6.861972, "lon": 107.586482, "jarak": 0.71}, {"nama": "Kost Putri 352", "alamat": "Jl. Dr. Setiabudi No.174B, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "5.0", "jumlah_rating": "3", "telepon": null, "lat": -6.8677307, "lon": 107.5929385, "jarak": 0.72}, {"nama": "Dewi's kost", "alamat": "Jl. Geger Arum Baru No.161B, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "15", "telepon": "+62 812-7109-7365", "lat": -6.8597595, "lon": 107.5865847, "jarak": 0.72}, {"nama": "Kosan Pondok Kalong", "alamat": "Jl. Gegerkalong Tengah Gg. Picung VI No.35, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.7", "jumlah_rating": "29", "telepon": "+62 812-2363-1904", "lat": -6.8677293, "lon": 107.5914088, "jarak": 0.73}, {"nama": "Kost Bale Asri Setiabudi Bandung", "alamat": "Gg. Puradinata Jl. Dr. Setiabudi No.11/174B, Gegerkalong", "area": "Setiabudi", "gender": "Tidak diketahui", "rating": "4.5", "jumlah_rating": "25", "telepon": "+62 821-9000-8209", "lat": -6.8678992, "lon": 107.5931122, "jarak": 0.73}, {"nama": "NT31 Rumah Kost", "alamat": "Jl. Negla Tengah No.31, Isola", "area": "Cilimus", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "17", "telepon": null, "lat": -6.8546047, "lon": 107.5930301, "jarak": 0.74}, {"nama": "Kosan Pak H.Abas Panorama Bandung", "alamat": "Jl. Kapten Abdul Hamid No.120, Hegarmanah", "area": "Panorama", "gender": "Tidak diketahui", "rating": null, "jumlah_rating": null, "telepon": null, "lat": -6.8664201, "lon": 107.5971547, "jarak": 0.74}, {"nama": "Kost puteri PURI KHARISMA", "alamat": "Jl. Geger Arum No.19, Isola", "area": "Cilimus", "gender": "Putri", "rating": "4.8", "jumlah_rating": "26", "telepon": "+62 822-4002-4147", "lat": -6.8600764, "lon": 107.5862886, "jarak": 0.74}, {"nama": "Kost Putri Bu Yoyo Gerlong", "alamat": "Jl. Gegerkalong Tengah Gg. H. Ridho II No.24F, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "4.9", "jumlah_rating": "12", "telepon": "+62 811-1660-600", "lat": -6.8680582, "lon": 107.5919901, "jarak": 0.76}, {"nama": "Kost Modern", "alamat": "Jl. Gegerkalong Tengah No.20, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.3", "jumlah_rating": "123", "telepon": "+62 817-622-868", "lat": -6.8681882, "lon": 107.5915638, "jarak": 0.78}, {"nama": "Kost Annurahma", "alamat": "Jl. Gegerkalong Tengah No.16C, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "11", "telepon": "+62 822-1939-1969", "lat": -6.8684679, "lon": 107.5915233, "jarak": 0.81}, {"nama": "Kost Putri Lilis", "alamat": "Jl. Gegerkalong Tengah No.16A, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "4.9", "jumlah_rating": "16", "telepon": "+62 821-2644-2733", "lat": -6.8684915, "lon": 107.591453, "jarak": 0.82}, {"nama": "Gladisa Kost", "alamat": "Jl. Cidadap Girang Baru No.34, Ledeng", "area": "Cidadap", "gender": "Tidak diketahui", "rating": "4.0", "jumlah_rating": "5", "telepon": "+62 813-9533-979", "lat": -6.8549923, "lon": 107.5972502, "jarak": 0.85}, {"nama": "Kost Cidadap Girang 26", "alamat": "Jl. Cidadap Girang No.26, Ledeng, Kec. Cidadap", "area": "Cidadap", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "21", "telepon": "+62 811-1117-4278", "lat": -6.8549495, "lon": 107.5973887, "jarak": 0.86}, {"nama": "Kost Sersan Surip 147", "alamat": "Jl. Sersan Surip No.147, Ledeng", "area": "Cidadap", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "1", "telepon": null, "lat": -6.8553016, "lon": 107.5980458, "jarak": 0.88}, {"nama": "Kost GKT II - Kost Putri Gegerkalong", "alamat": "Jl. Gegerkalong Tengah No.173 B II No.53C, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": null, "jumlah_rating": null, "telepon": "+62 888-1881-802", "lat": -6.8692209, "lon": 107.591204, "jarak": 0.9}, {"nama": "Kost Bu Neneng 108", "alamat": "Jl. Gegerkalong Girang No.108, Isola", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "3.9", "jumlah_rating": "31", "telepon": "+62 857-9529-8175", "lat": -6.8601405, "lon": 107.5846933, "jarak": 0.91}, {"nama": "Kost putri 147b", "alamat": "Jl. Dr. Setiabudi, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "5.0", "jumlah_rating": "1", "telepon": null, "lat": -6.8696924, "lon": 107.593364, "jarak": 0.93}, {"nama": "Kost Urban House Setiabudi Bandung", "alamat": "Jl. Dr. Setiabudi No.186E, Hegarmanah, Kec. Cidadap", "area": "Setiabudi", "gender": "Campur", "rating": "4.9", "jumlah_rating": "175", "telepon": "+62 877-0870-2335", "lat": -6.8702443, "lon": 107.594179, "jarak": 1.0}, {"nama": "Kost Putri Gerlong Hilir", "alamat": "Jl. Gegerkalong Hilir No.17, Gegerkalong", "area": "Gegerkalong", "gender": "Putri", "rating": "4.0", "jumlah_rating": "39", "telepon": "+62 812-2129-896", "lat": -6.8702903, "lon": 107.5922219, "jarak": 1.0}, {"nama": "Kosan Pondok Gerlong Bandung", "alamat": "Jl. Gegerkalong Hilir No.91, Sukarasa", "area": "Sukarasa", "gender": "Tidak diketahui", "rating": "4.4", "jumlah_rating": "23", "telepon": "+62 853-5340-0026", "lat": -6.8689912, "lon": 107.5866983, "jarak": 1.1}, {"nama": "Kost Rafar Kingdom Setiabudi Bandung", "alamat": "Jl. Budi Luhur I No.1, Gegerkalong", "area": "Setiabudi", "gender": "Tidak diketahui", "rating": "3.8", "jumlah_rating": "74", "telepon": "+62 812-8360-8888", "lat": -6.87152, "lon": 107.5935028, "jarak": 1.14}, {"nama": "KOST ODOL SETIABUDI", "alamat": "Jl. Dr. Setiabudi No.119B, Gegerkalong", "area": "Setiabudi", "gender": "Tidak diketahui", "rating": "4.7", "jumlah_rating": "3", "telepon": "+62 812-9412-693", "lat": -6.8720806, "lon": 107.5940548, "jarak": 1.21}, {"nama": "Kos Ibu Rina", "alamat": "Jl. Picung No.5, Sukarasa", "area": "Sukarasa", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "8", "telepon": "+62 852-2300-7492", "lat": -6.8712842, "lon": 107.588169, "jarak": 1.23}, {"nama": "Kosan 77 Cipedes", "alamat": "Jl. Cipedes Tengah, Sukarasa", "area": "Sukarasa", "gender": "Tidak diketahui", "rating": "3.9", "jumlah_rating": "29", "telepon": "+62 856-5913-2830", "lat": -6.8721436, "lon": 107.5900587, "jarak": 1.25}, {"nama": "Cozzy Residence Cipedes Bandung", "alamat": "Jl. Cipedes Atas No.86 B, Gegerkalong", "area": "Gegerkalong", "gender": "Campur", "rating": "4.0", "jumlah_rating": "818", "telepon": "+62 815-1433-9447", "lat": -6.872331, "lon": 107.5904889, "jarak": 1.26}, {"nama": "Pondok Ambu", "alamat": "Jl. Gegerkalong Hilir No.156", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.4", "jumlah_rating": "32", "telepon": "+62 852-2341-0305", "lat": -6.8678997, "lon": 107.5820606, "jarak": 1.4}, {"nama": "BE Home Boarding House", "alamat": "Jl. Sukahaji No.86, Sukarasa", "area": "Sukarasa", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "29", "telepon": "+62 898-1012-581", "lat": -6.8723798, "lon": 107.5849286, "jarak": 1.51}, {"nama": "Kost Putri Cipedes 51", "alamat": "Jl. Cipedes Atas No.51, Sukarasa", "area": "Sukarasa", "gender": "Putri", "rating": "4.5", "jumlah_rating": "22", "telepon": null, "lat": -6.8747252, "lon": 107.5906952, "jarak": 1.51}, {"nama": "Pondok Kost Cisatu II", "alamat": "Jl. Cisatu II No.2, Ciumbuleuit, Kec. Cidadap", "area": "Cidadap", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "17", "telepon": "+62 878-2282-3042", "lat": -6.8697104, "lon": 107.6045047, "jarak": 1.59}, {"nama": "Kost Gerlong Hilir 185A", "alamat": "Jl. Gegerkalong Hilir No.185A, Sarijadi", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": "4.4", "jumlah_rating": "67", "telepon": "+62 858-6008-0050", "lat": -6.8676139, "lon": 107.5795974, "jarak": 1.63}, {"nama": "Kost Cipedes Sukasari & Cipedes Tech", "alamat": "Jl. Cipedes Atas No.22, Gegerkalong", "area": "Gegerkalong", "gender": "Tidak diketahui", "rating": null, "jumlah_rating": null, "telepon": "+62 813-1314-4540", "lat": -6.8761525, "lon": 107.5908067, "jarak": 1.67}, {"nama": "Gumara Kost Putra", "alamat": "Sarijadi", "area": "Sarijadi", "gender": "Putra", "rating": "5.0", "jumlah_rating": "9", "telepon": "+62 823-3239-9229", "lat": -6.8676778, "lon": 107.578186, "jarak": 1.77}, {"nama": "Kos Cikendi 100", "alamat": "Jl. Hegarmanah Cikendi No.100, Hegarmanah, Kec. Cidadap", "area": "Cidadap", "gender": "Campur", "rating": "4.7", "jumlah_rating": "38", "telepon": null, "lat": -6.8750995, "lon": 107.6020282, "jarak": 1.84}, {"nama": "Kos Ibu Nengsih", "alamat": "Jl. Cipedes Tengah No.225, Sukarasa", "area": "Sukarasa", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "2", "telepon": "+62 878-3874-8250", "lat": -6.8781006, "lon": 107.5904147, "jarak": 1.89}, {"nama": "Kost Putri - Sarijadi", "alamat": "Jl. Gegerkalong Hilir No.93, Sarijadi", "area": "Sarijadi", "gender": "Putri", "rating": "5.0", "jumlah_rating": "1", "telepon": "+62 22 77843049", "lat": -6.8728046, "lon": 107.5802932, "jarak": 1.89}, {"nama": "Kost Putra RCH 12", "alamat": "Jl. Rancaherang No.12, Sarijadi", "area": "Sarijadi", "gender": "Putra", "rating": null, "jumlah_rating": null, "telepon": "+62 821-1260-0617", "lat": -6.8696318, "lon": 107.577834, "jarak": 1.9}, {"nama": "KOS CINTA RASA BANDUNG", "alamat": "Sukarasa", "area": "Sukarasa", "gender": "Tidak diketahui", "rating": "4.3", "jumlah_rating": "4", "telepon": "+62 821-1680-3040", "lat": -6.8767839, "lon": 107.5849257, "jarak": 1.93}, {"nama": "THERESIA HOME KOST, BANDUNG", "alamat": "Jl. Bukit Hegar No.1 No.4, Hegarmanah", "area": "Hegarmanah", "gender": "Tidak diketahui", "rating": "4.6", "jumlah_rating": "28", "telepon": "+62 813-9222-2259", "lat": -6.8750596, "lon": 107.6041183, "jarak": 1.97}, {"nama": "Pondok Indah Kost Bukit Sastra I", "alamat": "Jl. Ciumbuleuit Gg. Bukit Sastra No.139B, Hegarmanah, Kec. Cidadap", "area": "Cidadap", "gender": "Tidak diketahui", "rating": "4.6", "jumlah_rating": "41", "telepon": "+62 811-238-674", "lat": -6.876143, "lon": 107.6030286, "jarak": 1.99}, {"nama": "KARIZMA GUESTHOUSE", "alamat": "Jl. Sarijadi Raya No.50, Sukarasa", "area": "Sukarasa", "gender": "Tidak diketahui", "rating": "4.1", "jumlah_rating": "26", "telepon": "+62 821-1529-9663", "lat": -6.8741749, "lon": 107.5802806, "jarak": 2.0}, {"nama": "Kost Putra Annisa Sarijadi", "alamat": "Jl. Sariasih I No.30, Sarijadi", "area": "Sarijadi", "gender": "Putra", "rating": "4.3", "jumlah_rating": "4", "telepon": null, "lat": -6.8737113, "lon": 107.5791097, "jarak": 2.05}, {"nama": "GG Kost", "alamat": "Jl. Cilandak No.91, Sukarasa", "area": "Sukarasa", "gender": "Tidak diketahui", "rating": "4.7", "jumlah_rating": "16", "telepon": null, "lat": -6.8753658, "lon": 107.5808223, "jarak": 2.06}, {"nama": "Enden Kost Sarijadi (Kost Putri)", "alamat": "Jl. Sariasih I No.44, Sarijadi", "area": "Sarijadi", "gender": "Putri", "rating": "4.8", "jumlah_rating": "5", "telepon": "+62 878-2111-8424", "lat": -6.874044, "lon": 107.5792882, "jarak": 2.06}, {"nama": "Kost putra Sariasih 1/21", "alamat": "Jl. Sariasih I No.21, Sarijadi", "area": "Sarijadi", "gender": "Putra", "rating": "4.5", "jumlah_rating": "2", "telepon": "+62 898-7421-846", "lat": -6.8740817, "lon": 107.5791402, "jarak": 2.08}, {"nama": "Graha Setiabudi Bandung Kostan", "alamat": "Jl. Dr. Setiabudi No.80A, Hegarmanah, Kec. Cidadap", "area": "Setiabudi", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "143", "telepon": "+62 858-7188-0037", "lat": -6.8793085, "lon": 107.5983151, "jarak": 2.09}, {"nama": "Kost CIPEDES TENGAH", "alamat": "Jl. Cipedes Tengah No.186, Sukagalih", "area": "Sukagalih", "gender": "Tidak diketahui", "rating": "4.1", "jumlah_rating": "36", "telepon": "+62 852-2110-2700", "lat": -6.8800113, "lon": 107.59052, "jarak": 2.1}, {"nama": "Cozy Place Kost Putra", "alamat": "Jl. Sarijadi Raya No.110 Blk II, Sarijadi", "area": "Sarijadi", "gender": "Putra", "rating": "4.3", "jumlah_rating": "8", "telepon": "+62 813-2194-2227", "lat": -6.8750317, "lon": 107.579266, "jarak": 2.14}, {"nama": "Kost Putri BJ33", "alamat": "Jl. Bukit Jarian No.33b, Hegarmanah", "area": "Hegarmanah", "gender": "Putri", "rating": "4.9", "jumlah_rating": "18", "telepon": "+62 821-1790-2033", "lat": -6.8764183, "lon": 107.6055218, "jarak": 2.18}, {"nama": "kost al", "alamat": "Sukarasa", "area": "Sukarasa", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "1", "telepon": null, "lat": -6.8775727, "lon": 107.5815284, "jarak": 2.2}, {"nama": "Kost Putri RF", "alamat": "Sukarasa", "area": "Sukarasa", "gender": "Putri", "rating": "4.8", "jumlah_rating": "4", "telepon": "+62 852-8547-4331", "lat": -6.8776712, "lon": 107.581461, "jarak": 2.22}, {"nama": "Kost Pondok Teratai dekat UNPAR & ITB", "alamat": "Hegarmanah", "area": "Hegarmanah", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "20", "telepon": null, "lat": -6.8765604, "lon": 107.6061042, "jarak": 2.24}, {"nama": "Silver Kost 1 dekat UNPAR", "alamat": "Jl. Bukit Jarian No.56, Hegarmanah", "area": "Hegarmanah", "gender": "Putri", "rating": "4.6", "jumlah_rating": "14", "telepon": null, "lat": -6.8759491, "lon": 107.6068325, "jarak": 2.24}, {"nama": "Kost Pondok Ungu Sarijadi", "alamat": "Perum Gg. Sarirasa X No.33, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "14", "telepon": "+62 812-2190-1933", "lat": -6.8768058, "lon": 107.5790117, "jarak": 2.31}, {"nama": "Kost 42 Sarijadi", "alamat": "Gg. Sarirasa XIV No.42 Blok IV, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "20", "telepon": "+62 821-1166-6096", "lat": -6.8778478, "lon": 107.5801214, "jarak": 2.32}, {"nama": "Kost Mimoo House", "alamat": "Jl. Sari Asih Blok 3 No.39, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "32", "telepon": "+62 812-1464-3223", "lat": -6.8754709, "lon": 107.5771713, "jarak": 2.34}, {"nama": "Kost Bu Euis Sarijadi Khusus Putri", "alamat": "Jl. Sarijadi Raya No.127, Sarijadi", "area": "Sarijadi", "gender": "Putri", "rating": "5.0", "jumlah_rating": "5", "telepon": "+62 822-1701-1405", "lat": -6.8762313, "lon": 107.5777603, "jarak": 2.36}, {"nama": "KOST CANTIK 23 SARIJADI", "alamat": "Jl. Sarijadi Raya No.23 blok 8, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "2", "telepon": "+62 813-2478-7003", "lat": -6.8757838, "lon": 107.576913, "jarak": 2.39}, {"nama": "Oma Kost", "alamat": "Sarijadi", "area": "Sarijadi", "gender": "Putri", "rating": "4.8", "jumlah_rating": "16", "telepon": null, "lat": -6.8759226, "lon": 107.5768996, "jarak": 2.4}, {"nama": "Kosan Si Putih", "alamat": "Jl. Sarimanah 2 No.179 Blok 8, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "21", "telepon": "+62 818-620-055", "lat": -6.8763523, "lon": 107.5757027, "jarak": 2.53}, {"nama": "Bella Kost Sarijadi Bandung", "alamat": "Blk. 8 No.175-176, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "28", "telepon": "+62 818-0511-1973", "lat": -6.8762791, "lon": 107.57553, "jarak": 2.54}, {"nama": "Kost Cipedes", "alamat": "Jl. Cipedes Tengah No.195, Cipedes", "area": "Cipedes", "gender": "Tidak diketahui", "rating": "3.9", "jumlah_rating": "20", "telepon": "+62 821-7774-4815", "lat": -6.8842084, "lon": 107.5904794, "jarak": 2.56}, {"nama": "Kost Fitriah Cipedes Bandung", "alamat": "Jl. Cipedes Tengah 1 No.43-37, Sukarasa", "area": "Sukarasa", "gender": "Putri", "rating": "5.0", "jumlah_rating": "1", "telepon": "+62 811-9008-7829", "lat": -6.884491, "lon": 107.5901016, "jarak": 2.6}, {"nama": "Kost Awingahgar Sarijadi", "alamat": "Jl. Sarimanah 2 No.30, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "4.6", "jumlah_rating": "42", "telepon": "+62 821-2006-3025", "lat": -6.8771272, "lon": 107.5755007, "jarak": 2.61}, {"nama": "Kost Annur Sarijadi", "alamat": "Jl. Sarimanah 1 No.153 Blok 10, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "9", "telepon": "+62 878-2111-8039", "lat": -6.8796966, "lon": 107.5776543, "jarak": 2.65}, {"nama": "KOSAN PULIKAS", "alamat": "Hegarmanah", "area": "Hegarmanah", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "16", "telepon": "+62 898-9019-234", "lat": -6.8823359, "lon": 107.6054011, "jarak": 2.72}, {"nama": "Kost Pak Nunu", "alamat": "Jl. Siliwangi Gang Bp. EHOM No.45/155A, Hegarmanah", "area": "Hegarmanah", "gender": "Tidak diketahui", "rating": "4.8", "jumlah_rating": "22", "telepon": "+62 812-2457-5629", "lat": -6.8827518, "lon": 107.6061381, "jarak": 2.8}, {"nama": "Kost Putri Jl Setiabudi 3B Bandung", "alamat": "Jl. Dr. Setiabudi No.3B, Hegarmanah, Kec. Cidadap", "area": "Setiabudi", "gender": "Putri", "rating": "5.0", "jumlah_rating": "2", "telepon": null, "lat": -6.8845539, "lon": 107.604058, "jarak": 2.86}, {"nama": "Kost Putra Zyand House", "alamat": "Jl. Terusan Babakan Jeruk 1 No.124, Sukagalih", "area": "Sukagalih", "gender": "Putra", "rating": "5.0", "jumlah_rating": "2", "telepon": null, "lat": -6.8859965, "lon": 107.5835015, "jarak": 2.94}, {"nama": "KOSAN TERDEKAT (SYANI LIVING KOST)", "alamat": "Gg. Sarimanis II No.138, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "2", "telepon": "+62 823-1673-2037", "lat": -6.8813309, "lon": 107.5739578, "jarak": 3.05}, {"nama": "Kostan Pasutri Hasanah", "alamat": "Jl. Cipedes Tengah No.47, Sukagalih", "area": "Sukagalih", "gender": "Campur", "rating": "4.7", "jumlah_rating": "29", "telepon": "+62 895-2588-1698", "lat": -6.889053, "lon": 107.5908321, "jarak": 3.09}, {"nama": "Kostan Mak Hera (BHI) Residence", "alamat": "Gg. P. Sarif Gg. Pak Encun No.39, Cipedes Tengah", "area": "Cipedes", "gender": "Tidak diketahui", "rating": "4.4", "jumlah_rating": "27", "telepon": null, "lat": -6.8892333, "lon": 107.591355, "jarak": 3.11}, {"nama": "Rumah Bagus Bandung", "alamat": "Gg. Sarimanis IV No.58, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "4.7", "jumlah_rating": "75", "telepon": "+62 811-8881-0370", "lat": -6.8808909, "lon": 107.5727895, "jarak": 3.11}, {"nama": "Kost Sarimanis", "alamat": "Gg. Sarimanis IV No.65, Sarijadi", "area": "Sarijadi", "gender": "Tidak diketahui", "rating": "5.0", "jumlah_rating": "4", "telepon": null, "lat": -6.8808635, "lon": 107.5727407, "jarak": 3.11}, {"nama": "Griya Mas CT35", "alamat": "Jl. Cipedes Tengah No.35, Sukagalih", "area": "Sukagalih", "gender": "Tidak diketahui", "rating": "4.0", "jumlah_rating": "20", "telepon": "+62 878-2345-0382", "lat": -6.8898715, "lon": 107.591004, "jarak": 3.18}, {"nama": "Kost Dalia 72", "alamat": "Jl. Sarijadi Raya No.72 Blok 24, Sukawarna", "area": "Sukawarna", "gender": "Tidak diketahui", "rating": "4.9", "jumlah_rating": "13", "telepon": "+62 812-6800-1504", "lat": -6.8835191, "lon": 107.5744678, "jarak": 3.2}, {"nama": "Kost apik sarijadi", "alamat": "Jl. Sarimadu No.66, Sukawarna", "area": "Sukawarna", "gender": "Tidak diketahui", "rating": "4.3", "jumlah_rating": "3", "telepon": null, "lat": -6.8853487, "lon": 107.5742895, "jarak": 3.37}];
+
+const UPI_CENTER = [-6.86129421, 107.59288759];
+
+const COLOR = {
+  "Putra": "#2563eb",
+  "Putri": "#db2777",
+  "Campur": "#059669",
+  "Tidak diketahui": "#6b7280"
+};
+
+// ---------- Map init ----------
+const map = L.map('map', { zoomControl: false }).setView(UPI_CENTER, 15);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+// UPI marker
+const upiIcon = L.divIcon({
+  className: '',
+  html: `<div style="background:#111827;color:white;font-size:16px;width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);border:2px solid white;">
+           <span style="transform:rotate(45deg);">🎓</span>
+         </div>`,
+  iconSize: [34, 34],
+  iconAnchor: [17, 34]
+});
+L.marker(UPI_CENTER, { icon: upiIcon, zIndexOffset: 1000 })
+  .addTo(map)
+  .bindPopup('<b>Kampus UPI (Isola)</b><br>Titik referensi jarak');
+
+// 5km radius circle
+L.circle(UPI_CENTER, {
+  radius: 5000,
+  color: '#7c3aed',
+  weight: 1.5,
+  dashArray: '6,6',
+  fillOpacity: 0.02
+}).addTo(map);
+
+const markerCluster = L.markerClusterGroup({
+  maxClusterRadius: 45,
+  spiderfyOnMaxZoom: true,
+  disableClusteringAtZoom: 18
+});
+map.addLayer(markerCluster);
+
+function makeDotIcon(color, highlighted){
+  const size = highlighted ? 26 : 18;
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.45);"></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2]
+  });
+}
+
+let markerRefs = {}; // idx -> marker
+
+function normGender(g){
+  if(!g) return "Tidak diketahui";
+  const s = g.trim();
+  if(s === "Putra" || s === "Putri" || s === "Campur") return s;
+  return "Tidak diketahui";
+}
+
+function badgeClass(g){
+  return g === "Tidak diketahui" ? "TidakDiketahui" : g;
+}
+
+function phoneLink(tel){
+  if(!tel) return null;
+  const digits = tel.replace(/[^\d+]/g, '').replace(/^\+/, '');
+  return `https://wa.me/${digits}`;
+}
+
+function googleMapsLink(item){
+  return `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
+}
+
+function googleMapsDirLink(item){
+  return `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lon}`;
+}
+
+function popupHtml(item){
+  const g = normGender(item.gender);
+  const ratingStr = item.rating ? `<span class="rating-star">★</span> ${item.rating} <span style="color:#9ca3af;">(${item.jumlah_rating || 0})</span>` : 'Belum ada rating';
+  const teleponRow = item.telepon ?
+    `<a class="popup-btn" href="${phoneLink(item.telepon)}" target="_blank" rel="noopener">💬 WhatsApp: ${item.telepon}</a>` : '';
+  return `
+    <div class="popup-box">
+      <div class="popup-title">${escapeHtml(item.nama)}</div>
+      <div class="popup-addr">📍 ${escapeHtml(item.alamat)}</div>
+      <div class="popup-row"><span>Area</span><span>${escapeHtml(item.area)}</span></div>
+      <div class="popup-row"><span>Jenis</span><span>${g}</span></div>
+      <div class="popup-row"><span>Rating</span><span>${ratingStr}</span></div>
+      <div class="popup-row"><span>Jarak dari UPI</span><span>${item.jarak != null ? item.jarak + ' km' : '-'}</span></div>
+      <div class="popup-btn-row">
+        <a class="popup-btn popup-btn-maps" href="${googleMapsLink(item)}" target="_blank" rel="noopener">📍 Lihat di Google Maps</a>
+        <a class="popup-btn popup-btn-dir" href="${googleMapsDirLink(item)}" target="_blank" rel="noopener">🧭 Rute</a>
+      </div>
+      ${teleponRow}
+    </div>
+  `;
+}
+
+function escapeHtml(str){
+  if(str == null) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---------- Build filter options ----------
+const areas = [...new Set(KOS_DATA.map(d => d.area))].sort();
+const areaSelect = document.getElementById('areaFilter');
+areas.forEach(a => {
+  const opt = document.createElement('option');
+  opt.value = a; opt.textContent = a;
+  areaSelect.appendChild(opt);
+});
+
+// ---------- State ----------
+let state = {
+  search: '',
+  area: '',
+  genders: new Set(["Putra","Putri","Campur","Tidak diketahui"]),
+  sort: 'jarak',
+  selectedIdx: null
+};
+
+document.getElementById('search').addEventListener('input', (e) => {
+  state.search = e.target.value.toLowerCase();
+  render();
+});
+areaSelect.addEventListener('change', (e) => {
+  state.area = e.target.value;
+  render();
+});
+document.getElementById('sortBy').addEventListener('change', (e) => {
+  state.sort = e.target.value;
+  render();
+});
+document.querySelectorAll('.gender-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const g = btn.dataset.g;
+    if(state.genders.has(g)){
+      state.genders.delete(g);
+      btn.classList.remove('active');
+    } else {
+      state.genders.add(g);
+      btn.classList.add('active');
+    }
+    render();
+  });
+});
+
+function getFiltered(){
+  let arr = KOS_DATA.map((d, idx) => ({...d, _idx: idx}));
+  arr = arr.filter(d => state.genders.has(normGender(d.gender)));
+  if(state.area) arr = arr.filter(d => d.area === state.area);
+  if(state.search){
+    arr = arr.filter(d =>
+      d.nama.toLowerCase().includes(state.search) ||
+      d.alamat.toLowerCase().includes(state.search) ||
+      d.area.toLowerCase().includes(state.search)
+    );
+  }
+  if(state.sort === 'jarak'){
+    arr.sort((a,b) => (a.jarak ?? 999) - (b.jarak ?? 999));
+  } else if(state.sort === 'rating'){
+    arr.sort((a,b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0));
+  } else if(state.sort === 'nama'){
+    arr.sort((a,b) => a.nama.localeCompare(b.nama));
+  }
+  return arr;
+}
+
+function renderStats(){
+  const total = KOS_DATA.length;
+  const putri = KOS_DATA.filter(d => normGender(d.gender) === 'Putri').length;
+  const putra = KOS_DATA.filter(d => normGender(d.gender) === 'Putra').length;
+  const campur = KOS_DATA.filter(d => normGender(d.gender) === 'Campur').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-chip">Total<b>${total}</b></div>
+    <div class="stat-chip">Putri<b style="color:${COLOR.Putri}">${putri}</b></div>
+    <div class="stat-chip">Putra<b style="color:${COLOR.Putra}">${putra}</b></div>
+    <div class="stat-chip">Campur<b style="color:${COLOR.Campur}">${campur}</b></div>
+  `;
+}
+
+function renderList(filtered){
+  const list = document.getElementById('list');
+  document.getElementById('resultCount').textContent = `${filtered.length} kos ditemukan`;
+  if(filtered.length === 0){
+    list.innerHTML = `<div id="empty-state">Tidak ada kos yang cocok dengan filter ini 🔍</div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(item => {
+    const g = normGender(item.gender);
+    const ratingStr = item.rating ? `<span class="rating-star">★</span> ${item.rating}` : 'Belum ada rating';
+    return `
+      <div class="kos-card" data-idx="${item._idx}">
+        <div class="kos-name">${escapeHtml(item.nama)}</div>
+        <div class="kos-meta">
+          <span class="badge ${badgeClass(g)}">${g === 'Tidak diketahui' ? 'Lainnya' : g}</span>
+          <span>${escapeHtml(item.area)}</span>
+          <span>·</span>
+          <span>${ratingStr}</span>
+          <span>·</span>
+          <span>${item.jarak != null ? item.jarak + ' km' : '-'}</span>
+          <a class="maps-mini-link" href="${googleMapsLink(item)}" target="_blank" rel="noopener" title="Buka di Google Maps" onclick="event.stopPropagation()">🗺️</a>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('.kos-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const idx = parseInt(card.dataset.idx);
+      focusMarker(idx);
+    });
+  });
+}
+
+function renderMarkers(filtered){
+  markerCluster.clearLayers();
+  markerRefs = {};
+  filtered.forEach(item => {
+    const g = normGender(item.gender);
+    const marker = L.marker([item.lat, item.lon], {
+      icon: makeDotIcon(COLOR[g], item._idx === state.selectedIdx)
+    });
+    marker.bindPopup(popupHtml(item));
+    marker.on('click', () => {
+      selectCard(item._idx);
+    });
+    markerRefs[item._idx] = marker;
+    markerCluster.addLayer(marker);
+  });
+}
+
+function selectCard(idx){
+  state.selectedIdx = idx;
+  document.querySelectorAll('.kos-card').forEach(c => {
+    c.classList.toggle('selected', parseInt(c.dataset.idx) === idx);
+  });
+}
+
+function focusMarker(idx){
+  const item = KOS_DATA[idx];
+  selectCard(idx);
+  map.setView([item.lat, item.lon], 17, { animate: true });
+  const marker = markerRefs[idx];
+  if(marker){
+    if(markerCluster.hasLayer(marker)){
+      markerCluster.zoomToShowLayer(marker, () => {
+        marker.openPopup();
+      });
+    } else {
+      marker.openPopup();
+    }
+  }
+}
+
+function render(){
+  const filtered = getFiltered();
+  renderList(filtered);
+  renderMarkers(filtered);
+}
+
+// legend control
+const legend = L.control({ position: 'bottomleft' });
+legend.onAdd = function(){
+  const div = L.DomUtil.create('div', 'legend-box');
+  div.innerHTML = `
+    <b>Legenda</b><br>
+    <span class="legend-dot" style="background:${COLOR.Putra}"></span>Kos Putra<br>
+    <span class="legend-dot" style="background:${COLOR.Putri}"></span>Kos Putri<br>
+    <span class="legend-dot" style="background:${COLOR.Campur}"></span>Campur<br>
+    <span class="legend-dot" style="background:${COLOR["Tidak diketahui"]}"></span>Tidak diketahui<br>
+    <span style="display:inline-block;width:10px;height:10px;background:#111827;border-radius:50% 50% 50% 0;transform:rotate(-45deg) translateY(1px);margin-right:6px;"></span>Kampus UPI
+  `;
+  return div;
+};
+legend.addTo(map);
+
+renderStats();
+render();
+</script>
+</body>
+</html>
